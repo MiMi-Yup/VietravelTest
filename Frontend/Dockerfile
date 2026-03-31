@@ -45,11 +45,13 @@ COPY . .
 
 # Run tests — fail the build if any test fails
 RUN if [ -f package-lock.json ]; then \
-    npx jest --ci --no-cache --verbose 2>&1; \
+    npm run test -- --ci; \
   elif [ -f yarn.lock ]; then \
     corepack enable yarn && yarn test --ci; \
   elif [ -f pnpm-lock.yaml ]; then \
     corepack enable pnpm && pnpm test --ci; \
+  else \
+    echo "No lockfile found." && exit 1; \
   fi
 
 # ============================================

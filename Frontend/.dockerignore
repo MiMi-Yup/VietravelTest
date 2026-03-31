@@ -19,12 +19,10 @@ dist/
 build/
 .vercel/
 
-# Tests and testing output (not needed in production images)
+# Tests and testing output (not needed in production images, but needed in tester stage)
 coverage/
 .nyc_output/
-__tests__/
 __mocks__/
-jest/
 cypress/
 cypress/screenshots/
 cypress/videos/
@@ -32,11 +30,8 @@ playwright-report/
 test-results/
 .vitest/
 vitest.config.*
-jest.config.*
 cypress.config.*
 playwright.config.*
-*.test.*
-*.spec.*
 
 # Local development and editor files
 .git/
