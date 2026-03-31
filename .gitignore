@@ -1,0 +1,3 @@
+# Vietravel root gitignore
+.env
+!.env.example

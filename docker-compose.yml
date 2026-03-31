@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # 1. Database
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: vietravel-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - vietravel-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 2. Backend API (.NET)
+  web-api:
+    build: 
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: vietravel-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_HTTP_PORTS=8080
+      # Database
+      - ConnectionStrings__DefaultConnection=Host=postgres-db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Pooling=true;Minimum Pool Size=10;Maximum Pool Size=100;Connection Idle Lifetime=300;
+      # JWT
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY}
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - JwtSettings__ExpiryMinutes=${JWT_EXPIRY_MINUTES}
+      # Auth
+      - AuthSettings__Username=${AUTH_USERNAME}
+      - AuthSettings__Password=${AUTH_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - vietravel-network
+    restart: unless-stopped
+
+  # 3. Frontend Next.js
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        - API_URL=${API_URL}
+    container_name: vietravel-frontend
+    environment:
+      - NODE_ENV=production
+      - API_URL=${API_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - web-api
+    networks:
+      - vietravel-network
+    restart: unless-stopped
+
+networks:
+  vietravel-network:
+    driver: bridge
+
+volumes:
+  pgdata:
